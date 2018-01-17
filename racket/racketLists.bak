@@ -1,0 +1,11 @@
+#lang racket
+
+(define (between temp1 temp2 tempCheck)
+  (if (and (< temp1 tempCheck) (> temp2 tempCheck))
+      true
+      false))
+
+(define (check-temps1 temps)
+  (if (empty? temps)
+      true
+      (and (between 5 95 (first temps)) (check-temps1 (rest temps)))))
