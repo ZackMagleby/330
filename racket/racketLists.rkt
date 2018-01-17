@@ -41,7 +41,12 @@
       empty
       (cons (* (- (first temps) 32) (/ 5 9)) (convertFC (rest temps)))))
 
-(define (eliminate-larger lst) 0)
+(define (eliminate-larger lst)
+  (if (equal? (length lst) 1)
+      lst
+      (if (< (first lst) (first (rest lst)))
+          (cons (first lst) (eliminate-larger (rest lst)))
+          (eliminate-larger (rest lst)))))
 
 (define (at-function lst iterator n)
   (if (equal? iterator n)

@@ -21,13 +21,12 @@
 '((1 1) (2 2) (3 3))
 5/2
 '(0 10 100)
-0
+'(1 2 3 4 5)
 3
 2
 -1
 
         Failed tests:
-9. 1 point. eliminate-larger general test. Hint: try using a helper function.
 
         Grade:
-10 out of 11
+12 out of 12
