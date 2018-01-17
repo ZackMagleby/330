@@ -20,12 +20,11 @@
       (first digits)
       (+ (first digits) (* 10 (convert (rest digits))))))
 
-;;(define (duple lst)
-;;  (if (equal? (length lst) 1)
-;;      (cons (first lst) (first lst))
-;;      (list (duple (first lst)) (duple (rest lst)))))
+(define (duple lst)
+  (if (empty? lst)
+      empty
+      (cons (list (first lst) (first lst)) (duple (rest lst)))))
 
-(define (duple lst) 0)
 
 (define (sum lst)
   (if (empty? lst)
@@ -37,21 +36,31 @@
       0
       (/ (sum lst) (length lst))))
 
-(define (convertFC temps) 0)
+(define (convertFC temps)
+  (if (empty? temps)
+      empty
+      (cons (* (- (first temps) 32) (/ 5 9)) (convertFC (rest temps)))))
 
 (define (eliminate-larger lst) 0)
 
-;;(define (at-function lst iterator n)
-;;  (if (equal? iterator n)
-;;      (first lst)
-;;      (at-function (rest lst) (+ iterator 1) n)))
+(define (at-function lst iterator n)
+  (if (equal? iterator n)
+      (first lst)
+      (at-function (rest lst) (+ iterator 1) n)))
 
-(define (get-nth lst n) 0)
 
-;;(define (get-nth lst n)
-;; (at-function lst 0 n))
+(define (get-nth lst n)
+ (at-function lst 0 n))
 
-(define (find-item lst target) 0)
+(define (contains-function lst iterator target)
+  (if (empty? lst)
+      -1
+      (if (equal? (first lst) target)
+          iterator
+          (contains-function (rest lst) (+ iterator 1) target))))
+
+(define (find-item lst target)
+  (contains-function lst 0 target))
 
 (check-temps1 (list 80 92 56))
 (check-temps1 (list 80 99 56))
