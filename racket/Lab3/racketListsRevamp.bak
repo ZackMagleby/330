@@ -66,16 +66,3 @@
 
 (define (find-item lst target)
   (contains-function lst 0 target))
-
-(check-temps1 (list 80 92 56))
-(check-temps1 (list 80 99 56))
-(check-temps (list 80 92 56) 5 95)
-(check-temps (list 80 99 56) 5 95)
-(convert (list 1 2 3))
-(duple (list 1 2 3))
-(average (list 1 2 3 4))
-(convertFC (list 32 50 212))
-(eliminate-larger (list 1 2 3 9 4 5))
-(get-nth (list 1 2 3 4) 2)
-(find-item (list 1 2 3 4) 3)
-(find-item (list 1 2 3 4) 42)
