@@ -112,5 +112,5 @@ if __name__ == "__main__":
                 total_possible += points
                 grade += points
         feedback_file.write("\n        Grade:\n" + str(grade) + " out of " + str(total_possible))
-    os.remove(tmp_fn)
+    
     print("See feedback file: " + feedback_fn)
