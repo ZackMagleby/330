@@ -64,6 +64,9 @@ function parse( expr::Array{Any} )
         return Binop(*, parse( expr[2] ), parse(expr[3]))
 
     elseif expr[1] == :/
+		if count(parse(expr[3])) == 0
+			throw(LispError("Cannot divide by zero!"))
+		end
         return Binop(/, parse( expr[2] ), parse(expr[3]))
     end
 
