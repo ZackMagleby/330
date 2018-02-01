@@ -9,19 +9,18 @@ Error
 Error
 
         Your output:
-RudInt.PlusNode(RudInt.NumNode(1), RudInt.NumNode(2))
-RudInt.MinusNode(RudInt.NumNode(1), RudInt.NumNode(2))
+RudInt.Binop(+, RudInt.Num(1), RudInt.Num(2))
+RudInt.Binop(-, RudInt.Num(1), RudInt.Num(2))
 Error
 Error
--1
+Error
 Error
 Error
 Error
 
         Failed tests:
-1. 1 point. parse (+ 1 2)
-2. 1 point. parse (- 1 2)
+5. 1 point. calc (- 1)
 6. 1 point. calc (* 1 2)
 
         Grade:
-5 out of 8
+6 out of 8

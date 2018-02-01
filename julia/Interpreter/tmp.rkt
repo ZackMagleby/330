@@ -97,3 +97,36 @@ function interp( cs::AbstractString )
 end
 
 end #module
+
+
+
+function lexParse(str)
+  RudInt.parse(Lexer.lex(str))
+end
+
+function parseInter(str)
+  RudInt.calc(lexParse(str))
+end
+
+function removeNL(str)
+  replace(string(str), "
+", "")
+end
+
+function testerr(f, param)
+  try
+    return removeNL(f(param))
+  catch Y
+    return "Error"
+  end
+end
+
+println(testerr(lexParse, "(+ 1 2)"))
+println(testerr(lexParse, "(- 1 2)"))
+println(testerr(lexParse, "+ 1 2"))
+println(testerr(lexParse, "(a)"))
+
+println(testerr(parseInter, "(- 1 2)"))
+println(testerr(parseInter, "(* 1 2)"))
+println(testerr(parseInter, "(collatz -1)"))
+println(testerr(parseInter, "(/ 1 0)"))
