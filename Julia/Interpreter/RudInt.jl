@@ -17,31 +17,13 @@ type Binop <: AE
 	rhs::AE
 end
 
+type Unop <: AE
+	op::Function
+	lhs::AE
+
 # <AE> ::= <number>
 type Num <: AE
     n::Real
-end
-
-# <AE> ::= (+ <AE> <AE>)
-type PlusNode <: AE
-    lhs::AE
-    rhs::AE
-end
-
-# <AE> ::= (- <AE> <AE>)
-type MinusNode <: AE
-    lhs::AE
-    rhs::AE
-end
-
-type MultiplyNode <: AE
-    lhs::AE
-    rhs::AE
-end
-
-type DivideNode <: AE
-    lhs::AE
-    rhs::AE
 end
 
 #
@@ -68,9 +50,13 @@ function parse( expr::Array{Any} )
 			throw(LispError("Cannot divide by zero!"))
 		end
         return Binop(/, parse( expr[2] ), parse(expr[3]))
-    end
 
-    throw(LispError("Unknown operator!"))
+	elseif expr[1] == :mod
+		return Binop(mod, parse( expr[2] ), parse(expr[3]))
+
+	else
+    	throw(LispError("Unknown operator!"))
+	end
 end
 
 function parse( expr::Any )
@@ -86,7 +72,11 @@ function calc( ast::Num )
 end
 
 function calc(ast::Binop)
-    return ast.op(ast.lhs, ast.rhs)
+    return ast.op(calc(ast.lhs), calc(ast.rhs))
+end
+
+function calc(ast::Unop)
+	return ast.op(calc(ast.lhs))
 end
 
 #
