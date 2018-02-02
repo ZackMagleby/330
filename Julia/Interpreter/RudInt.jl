@@ -8,6 +8,7 @@ export parse, calc, interp
 #
 # ===========TYPES================
 #
+
 abstract type AE
 end
 
@@ -47,6 +48,26 @@ function collatz_helper( n::Real, num_iters::Int )
 end
 
 #
+# ===========DICTIONARY===============
+#
+
+myDict = Dict(
+:+ => +,
+:-  => -,
+:* => *,
+:/ => /,
+:mod => mod,
+:collatz => collatz)
+
+
+function grabFunction(expr::Symbol)
+	try
+		return myDict[expr]
+	catch
+		throw(LispError("Function not in Dictionary"))
+	end
+end
+#
 # ===========PARSE===============
 #
 
@@ -59,27 +80,11 @@ function parse( expr::Array{Any} )
 	if length(expr) > 3
 		throw(LispError("Too many expressions!"))
 
-    elseif expr[1] == :+
-        return Binop( +, parse( expr[2] ), parse( expr[3] ) )
+    elseif length(expr) == 3
+        return Binop( grabFunction(expr[1]), parse( expr[2] ), parse( expr[3] ) )
 
-    elseif expr[1] == :-
-		println(expr[3])
-        return Binop(-, parse( expr[2] ), parse( expr[3] ) )
-
-    elseif expr[1] == :*
-        return Binop(*, parse( expr[2] ), parse(expr[3]))
-
-    elseif expr[1] == :/
-		if calc(parse(expr[3])) == 0
-			throw(LispError("Cannot divide by zero!"))
-		end
-        return Binop(/, parse( expr[2] ), parse(expr[3]))
-
-	elseif expr[1] == :mod
-		return Binop(mod, parse( expr[2] ), parse(expr[3]))
-
-	elseif expr[1] == :collatz
-		return Unop(collatz, parse(expr[2]));
+    elseif length(expr) == 2
+		return Unop(grabFunction(expr[1]), parse(expr[2]))
 
 	else
     	throw(LispError("Unknown operator!"))
@@ -99,11 +104,19 @@ function calc( ast::Num )
 end
 
 function calc(ast::Binop)
-    return ast.op(calc(ast.lhs), calc(ast.rhs))
+	if ast.op == :/ && calc(ast.rhs) == 0
+		throw(LispError("Cannot divide by Zero"))
+	else
+    	return ast.op(calc(ast.lhs), calc(ast.rhs))
+	end
 end
 
 function calc(ast::Unop)
-	return ast.op(calc(ast.lhs))
+	if ast.op == collatz && calc(ast.lhs) <= 0
+		throw(ListError("Collatz must be > 0"))
+	else
+		return ast.op(calc(ast.lhs))
+	end
 end
 
 #
