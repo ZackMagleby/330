@@ -20,10 +20,30 @@ end
 type Unop <: AE
 	op::Function
 	lhs::AE
+end
 
 # <AE> ::= <number>
 type Num <: AE
     n::Real
+end
+
+#
+# =======COLLATZ DEFINITION============
+#
+
+function collatz( n::Real )
+  return collatz_helper( n, 0 )
+end
+
+function collatz_helper( n::Real, num_iters::Int )
+  if n == 1
+    return num_iters
+  end
+  if mod(n,2)==0
+    return collatz_helper( n/2, num_iters+1 )
+  else
+    return collatz_helper( 3*n+1, num_iters+1 )
+  end
 end
 
 #
@@ -36,23 +56,30 @@ end
 
 function parse( expr::Array{Any} )
 
-    if expr[1] == :+
+	if length(expr) > 3
+		throw(LispError("Too many expressions!"))
+
+    elseif expr[1] == :+
         return Binop( +, parse( expr[2] ), parse( expr[3] ) )
 
     elseif expr[1] == :-
+		println(expr[3])
         return Binop(-, parse( expr[2] ), parse( expr[3] ) )
 
     elseif expr[1] == :*
         return Binop(*, parse( expr[2] ), parse(expr[3]))
 
     elseif expr[1] == :/
-		if count(parse(expr[3])) == 0
+		if calc(parse(expr[3])) == 0
 			throw(LispError("Cannot divide by zero!"))
 		end
         return Binop(/, parse( expr[2] ), parse(expr[3]))
 
 	elseif expr[1] == :mod
 		return Binop(mod, parse( expr[2] ), parse(expr[3]))
+
+	elseif expr[1] == :collatz
+		return Unop(collatz, parse(expr[2]));
 
 	else
     	throw(LispError("Unknown operator!"))
