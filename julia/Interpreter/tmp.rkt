@@ -104,8 +104,7 @@ function calc( ast::Num )
 end
 
 function calc(ast::Binop)
-	println(ast.op)
-	if ast.op == ./ && calc(ast.rhs) == 0
+	if (ast.op == /) && calc(ast.rhs) == 0
 		throw(LispError("Cannot divide by Zero"))
 	else
     	return ast.op(calc(ast.lhs), calc(ast.rhs))
@@ -113,7 +112,11 @@ function calc(ast::Binop)
 end
 
 function calc(ast::Unop)
-	return ast.op(calc(ast.lhs))
+	if (ast.op == collatz) && calc(ast.lhs) <= 0
+		throw(ListError("Collatz must be > 0"))
+	else
+		return ast.op(calc(ast.lhs))
+	end
 end
 
 #
