@@ -29,9 +29,9 @@ type Num <: AE
 end
 
 type If0Node <: AE
-  condition::AE
-  zero_branch::AE
-  nonzero_branch::AE
+  cond::AE
+  zerobranch::AE
+  nzerobranch::AE
 end
 
 type BindingNode <: AE
@@ -49,13 +49,13 @@ type VarRefNode <: AE
 end
 
 type FuncDefNode <: AE
-  formal::Symbol
+  formal::Array{Symbol}
   fun_body::AE
 end
 
 type FuncAppNode <: AE
   fun_expr::AE
-  arg_expr::AE
+  arg_expr::Array{AE}
 end
 
 
@@ -68,7 +68,7 @@ type NumVal <: RetVal
 end
 
 type ClosureVal <: RetVal
-  formal::Symbol
+  formal::Array{Symbol}
   body::AE
   env::Environment
 end
@@ -114,7 +114,9 @@ myDict = Dict(
 :* => *,
 :/ => /,
 :mod => mod,
-:collatz => collatz)
+:collatz => collatz,
+:if0 => +,
+:with => +)
 
 
 function grabFunction(expr::Symbol)
@@ -133,7 +135,12 @@ function parse( expr::Number )
 end
 
 function parse( expr::Symbol )
-    return VarRefNode( expr )
+	try
+		grabFunction(expr)
+	catch
+		return VarRefNode( expr )
+	end
+	throw(LispError("Symbol cannot be id"))
 end
 
 function parse( expr::Array{Any} )
@@ -147,6 +154,15 @@ function parse( expr::Array{Any} )
 		return WithNode( tempArray, parse(expr[3]))
 
 	elseif expr[1] == :lambda
+		if !isa(expr[2], Array)
+			throw(LispError("Not an Array!!"))
+		end
+		if length(expr[2]) == length(unique(expr[2]))
+			throw(LispError("Unique Value Error!"))
+		end
+		# if !mapreduce(x-> type(x) == Symbol && !(x in keys), (r, l) -> r && l, true, expr[2])
+		# 	throw(LispError("Not a symbol or it is a keywork"))
+		# end
 		return FuncDefNode( expr[2], parse(expr[3]) )
 	end
 
@@ -167,13 +183,18 @@ function parse( expr::Array{Any} )
 
     elseif length(expr) == 2
 		if (expr[1] == :collatz) || (expr[1] == :mod) || (expr[1] == :-)
-			return Unop(grabFunction(expr[1]), parse(expr[2]))
+			if (expr[1] == :collatz) && calc(expr[2], EmptyEnv()).n <= 0
+				throw(LispError("Collatz must be > 0"))
+			else
+				return Unop(grabFunction(expr[1]), parse(expr[2]))
+			end
 		else
 			throw(LispError("Too few expressions"))
 		end
 
 	else
-    	throw(LispError("Unknown operator!"))
+    	parsed = map(x->parse(x), expr)
+		return FuncAppNode(parsed[1],parsed[2:end])
 	end
 end
 
@@ -198,19 +219,15 @@ function calc(ast::Binop, env::Environment)
 end
 
 function calc(ast::Unop, env::Environment)
-	if (ast.op == collatz) && calc(ast.lhs, env) <= 0
-		throw(ListError("Collatz must be > 0"))
-	else
-		return ast.op(calc(ast.lhs, env))
-	end
+	return ast.op(calc(ast.lhs, env).n)
 end
 
 function calc( ast::If0Node, env::Environment )
-    cond = calc( ast.cond, env )
+    cond = calc( ast.cond, env ).n
     if cond == 0
-        return calc( ast.zerobranch, env )
+        return calc( ast.zerobranch, env ).n
     else
-        return calc( ast.nzerobranch, env )
+        return calc( ast.nzerobranch, env ).n
     end
 end
 
@@ -220,7 +237,7 @@ function calc( ast::WithNode, env::Environment )
 		tempDict[ast.nodes[i].sym] = ast.nodes[i].binding_expr
 	end
     ext_env = ExtendedEnv(tempDict, env )
-    return calc( ast.body, ext_env )
+    return calc( ast.body, ext_env ).n
 end
 
 function calc( ast::VarRefNode, env::EmptyEnv )
@@ -247,11 +264,9 @@ end
 
 function calc( ast::FuncAppNode, env::Environment )
     closure_val = calc( ast.fun_expr, env )
-    actual_parameter = calc( ast.arg_expr, env )
-    ext_env = ExtendedEnv( closure_val.formal,
-                           actual_parameter,
-                           closure_val.env )
-    return calc( closure_val.body, ext_env )
+    actual_parameter = map(x-> calc(x, env), ast.arg_expr)
+	D = Dict(zip(closure_val.formal, actual_parameter))
+	return calc(closure_val.body, ExtendedEnv(D, closure_val.env))
 end
 
 #
