@@ -1,4 +1,4 @@
-module RudInt
+module ExtInt
 
 push!(LOAD_PATH, pwd())
 
@@ -34,9 +34,13 @@ type If0Node <: AE
   nonzero_branch::AE
 end
 
+type BindingNode <: AE
+	sym::Symbol
+	binding_expr::AE
+end
+
 type WithNode <: AE
-  sym::Symbol
-  binding_expr::AE
+  nodes::Array{BindingNode}
   body::AE
 end
 
@@ -77,8 +81,7 @@ type EmptyEnv <: Environment
 end
 
 type ExtendedEnv <: Environment
-  sym::Symbol
-  val::RetVal
+  dict::Dict
   parent::Environment
 end
 
@@ -129,10 +132,19 @@ function parse( expr::Number )
     return Num( expr )
 end
 
+function parse( expr::Symbol )
+    return VarRefNode( expr )
+end
+
 function parse( expr::Array{Any} )
 
 	if expr[1] == :with
-		return WithNode( expr[2], parse(expr[3]), parse(expr[4]) )
+		tempArray = []
+		for i = 1:length(expr[2])
+			node = BindingNode(expr[2][i][1], parse(expr[2][i][2]))
+			push!(tempArray, node)
+		end
+		return WithNode( tempArray, parse(expr[3]))
 
 	elseif expr[1] == :lambda
 		return FuncDefNode( expr[2], parse(expr[3]) )
@@ -174,14 +186,14 @@ end
 #
 
 function calc( ast::Num, env::Environment )
-    return ast.n
+    return NumVal(ast.n)
 end
 
 function calc(ast::Binop, env::Environment)
 	if (ast.op == /) && calc(ast.rhs, env) == 0
 		throw(LispError("Cannot divide by Zero"))
 	else
-    	return ast.op(calc(ast.lhs, env), calc(ast.rhs, env))
+    	return ast.op(calc(ast.lhs, env).n, calc(ast.rhs, env).n)
 	end
 end
 
@@ -203,8 +215,11 @@ function calc( ast::If0Node, env::Environment )
 end
 
 function calc( ast::WithNode, env::Environment )
-    binding_val = calc( ast.binding_expr, env )
-    ext_env = ExtendedEnv( ast.sym, binding_val, env )
+	tempDict = Dict()
+	for i = 1:length(ast.nodes)
+		tempDict[ast.nodes[i].sym] = ast.nodes[i].binding_expr
+	end
+    ext_env = ExtendedEnv(tempDict, env )
     return calc( ast.body, ext_env )
 end
 
@@ -213,11 +228,17 @@ function calc( ast::VarRefNode, env::EmptyEnv )
 end
 
 function calc( ast::VarRefNode, env::ExtendedEnv )
-    if ast.sym == env.sym
-        return env.val
-    else
-        return calc( ast, env.parent )
-    end
+	try
+		return env.dict[ast.sym]
+	catch
+		return calc( ast, env.parent )
+	end
+
+	# if isdefined(env.dict[ast.sym])
+    #     return env.dict[ast.sym]
+    # else
+    #     return calc( ast, env.parent )
+    # end
 end
 
 function calc( ast::FuncDefNode, env::Environment )
@@ -240,7 +261,8 @@ end
 function interp( cs::AbstractString )
     lxd = Lexer.lex( cs )
     ast = parse( lxd )
-    return calc( ast )
+	env = EmptyEnv();
+    return calc( ast, env )
 end
 
 end #module
