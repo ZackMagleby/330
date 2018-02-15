@@ -81,7 +81,7 @@ type EmptyEnv <: Environment
 end
 
 type ExtendedEnv <: Environment
-  dict::Dict
+  dict::Dict{Symbol, RetVal}
   parent::Environment
 end
 
@@ -157,7 +157,7 @@ function parse( expr::Array{Any} )
 		if !isa(expr[2], Array)
 			throw(LispError("Not an Array!!"))
 		end
-		if length(expr[2]) == length(unique(expr[2]))
+		if length(expr[2]) != length(unique(expr[2]))
 			throw(LispError("Unique Value Error!"))
 		end
 		# if !mapreduce(x-> type(x) == Symbol && !(x in keys), (r, l) -> r && l, true, expr[2])
@@ -165,6 +165,9 @@ function parse( expr::Array{Any} )
 		# end
 		return FuncDefNode( expr[2], parse(expr[3]) )
 	end
+
+	binaryOps = Symbol[:+, :-, :/, :*, :mod]
+	unaryOps = Symbol[:collatz]
 
 	if length(expr) > 4
 		throw(LispError("Too many expressions!"))
@@ -174,16 +177,18 @@ function parse( expr::Array{Any} )
 			return If0Node(parse(expr[2]), parse(expr[3]), parse(expr[4]))
 		end
 
-    elseif length(expr) == 3
-		if (expr[1] != :collatz) && (expr[1] != :mod)
+    elseif expr[1] in binaryOps
+		if length(expr) == 3
 			return Binop( grabFunction(expr[1]), parse( expr[2] ), parse( expr[3] ) )
+		elseif length(expr) == 2 && expr[1] == :-
+			return Binop( grabFucntion(expr[1]), 0, parse(expr[2]))
 		else
 			throw(LispError("Too many expressions"))
 		end
 
-    elseif length(expr) == 2
-		if (expr[1] == :collatz) || (expr[1] == :mod) || (expr[1] == :-)
-			if (expr[1] == :collatz) && calc(expr[2], EmptyEnv()).n <= 0
+    elseif expr[1] in unaryOps
+		if length(expr) == 2
+			if (expr[1] == :collatz) && calc(parse(expr[2]), EmptyEnv()).n <= 0
 				throw(LispError("Collatz must be > 0"))
 			else
 				return Unop(grabFunction(expr[1]), parse(expr[2]))
@@ -194,7 +199,7 @@ function parse( expr::Array{Any} )
 
 	else
     	parsed = map(x->parse(x), expr)
-		return FuncAppNode(parsed[1],parsed[2:end])
+		return FuncAppNode(parsed[1], parsed[2:end])
 	end
 end
 
@@ -206,38 +211,47 @@ end
 # ===========CALCULATE===============
 #
 
+function calc(ast::AE)
+	return calc(ast, EmptyEnv())
+end
+
 function calc( ast::Num, env::Environment )
     return NumVal(ast.n)
 end
 
 function calc(ast::Binop, env::Environment)
-	if (ast.op == /) && calc(ast.rhs, env) == 0
+	if (ast.op == /) && calc(ast.rhs, env).n == 0
 		throw(LispError("Cannot divide by Zero"))
 	else
-    	return ast.op(calc(ast.lhs, env).n, calc(ast.rhs, env).n)
+		leftNum = calc(ast.lhs, env)
+		rightNum = calc(ast.rhs, env)
+		if typeof(leftNum) != NumVal || typeof(rightNum) != NumVal
+			throw(LispError("Incorrect Type!"))
+		end
+    	return NumVal(ast.op(calc(leftNum.n, rightNum.n)))
 	end
 end
 
 function calc(ast::Unop, env::Environment)
-	return ast.op(calc(ast.lhs, env).n)
+	return NumVal(ast.op(calc(ast.lhs, env).n))
 end
 
 function calc( ast::If0Node, env::Environment )
     cond = calc( ast.cond, env ).n
     if cond == 0
-        return calc( ast.zerobranch, env ).n
+        return calc( ast.zerobranch, env )
     else
-        return calc( ast.nzerobranch, env ).n
+        return calc( ast.nzerobranch, env )
     end
 end
 
 function calc( ast::WithNode, env::Environment )
 	tempDict = Dict()
 	for i = 1:length(ast.nodes)
-		tempDict[ast.nodes[i].sym] = ast.nodes[i].binding_expr
+		tempDict[ast.nodes[i].sym] = calc(ast.nodes[i].binding_expr, env)
 	end
     ext_env = ExtendedEnv(tempDict, env )
-    return calc( ast.body, ext_env ).n
+    return calc( ast.body, ext_env )
 end
 
 function calc( ast::VarRefNode, env::EmptyEnv )
@@ -259,14 +273,18 @@ function calc( ast::VarRefNode, env::ExtendedEnv )
 end
 
 function calc( ast::FuncDefNode, env::Environment )
-    return ClosureVal( ast.formal, ast.body , env )
+    return ClosureVal( ast.formal, ast.fun_body , env )
 end
 
 function calc( ast::FuncAppNode, env::Environment )
     closure_val = calc( ast.fun_expr, env )
-    actual_parameter = map(x-> calc(x, env), ast.arg_expr)
-	D = Dict(zip(closure_val.formal, actual_parameter))
-	return calc(closure_val.body, ExtendedEnv(D, closure_val.env))
+	if typeof(closure_val) == ClosureVal
+	    actual_parameter = map(x-> calc(x, env), ast.arg_expr)
+		D = Dict(zip(closure_val.formal, actual_parameter))
+		return calc(closure_val.body, ExtendedEnv(D, closure_val.env))
+	else
+		throw(LispError("Not A closureVal"))
+	end
 end
 
 #

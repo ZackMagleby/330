@@ -14,21 +14,15 @@
 1. Pass
 2. Error
 3. Error
-4. MethodError(ExtInt.calc, (ExtInt.If0Node(ExtInt.Num(1), ExtInt.Num(2), ExtInt.Num(3)),), 0x00000000000055a1)
-5. MethodError(ExtInt.calc, (ExtInt.WithNode(ExtInt.BindingNode[ExtInt.BindingNode(:x, ExtInt.Num(1))], ExtInt.VarRefNode(:x)),), 0x00000000000055a1)
-6. Error.LispError("Unique Value Error!")
-7. MethodError(ExtInt.grabFunction, (1,), 0x00000000000055a1)
+4. ExtInt.NumVal(3)
+5. ExtInt.NumVal(1)
+6. Pass
+7. Pass
 8. Error
-9. MethodError(ExtInt.calc, (-1, ExtInt.EmptyEnv()), 0x00000000000055a1)
-10. Error.LispError("Unknown operator!")
+9. Error
+10. ExtInt.NumVal(4)
 
         Failed tests:
-4. 1 point. calc (if0 1 2 3), Make sure your If statements work
-5. 1 point. calc (with ((x 1)) x), Make sure your withs work
-6. 1 point. calc (lambda (x) x), Make sure your lambdas parse and calc
-7. 1 point. parse (1 2 3), Not a parse error,
-9. 1 point. calc (collatz -1), Don't allow invalid arithmatic
-10. 1 point. calc ((lambda () 4)), Function application
 
         Grade:
-4 out of 10
+10 out of 10
