@@ -1,15 +1,20 @@
-module ExtInt
+module TransInt
 
 push!(LOAD_PATH, pwd())
 
 using Error
 using Lexer
-export parse, calc, interp
+export parse, calc, interp, analyze
 #
 # ===========TYPES================
 #
 
 abstract type AE
+end
+
+type PlusNode <: AE
+	op::Function
+	nums::Array{AE}
 end
 
 type Binop <: AE
@@ -164,6 +169,8 @@ function parse( expr::Array{Any} )
 		# 	throw(LispError("Not a symbol or it is a keywork"))
 		# end
 		return FuncDefNode( expr[2], parse(expr[3]) )
+	elseif expr[1] == :+
+		return PlusNode(+, parse(parsed[2:end]))
 	end
 
 	binaryOps = Symbol[:+, :-, :/, :*, :mod]
@@ -216,8 +223,15 @@ function calc(ast::AE)
 end
 
 function calc( ast::Num, env::Environment )
-	println(env)
     return NumVal(ast.n)
+end
+
+function calc(ast::PlusNode, env::Environment)
+	sum = 0
+	for i = 1:length(ast.nums)
+		sum = sum + calc(ast.nums[i])
+	end
+	return NumVal(sum)
 end
 
 function calc(ast::Binop, env::Environment)
