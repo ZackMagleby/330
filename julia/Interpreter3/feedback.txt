@@ -17,7 +17,11 @@
 5. false
 6. false
 7. TransInt.NumVal(1)
+TransInt.Num(2)
+TransInt.Num(1)
 8. TransInt.NumVal(6)
+TransInt.Num(2)
+TransInt.Num(1)
 9. TransInt.NumVal(6)
 
         Failed tests:

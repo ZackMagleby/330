@@ -175,13 +175,19 @@ function parse( expr::Array{Any} )
 		end
 		return PlusNode(+, map(x->parse(x), expr[2:end]))
 	elseif expr[1] == :and
-		parsed = parse(expr[length(expr)])
-		ifNode = If0Node(parsed, Num(0), Num(1))
-		for i = length(expr)-1:1
-			parsed = parse(expr[i])
-			ifNode = If0Node(parsed, 0, ifNode)
+		if length(expr) > 2
+			parsed = parse(expr[length(expr)])
+			ifNode = If0Node(parsed, Num(0), Num(1))
+			temp_array = reverse(expr)
+			for i = 2:length(temp_array)-1
+				parsed = parse(temp_array[i])
+				ifNode = If0Node(parsed, Num(0), ifNode)
+			end
+			return ifNode
+		else
+			throw(LispError("Too Few Arguments!"))
 		end
-		return ifNode
+
 	end
 
 	binaryOps = Symbol[:-, :/, :*, :mod]
@@ -235,14 +241,6 @@ end
 
 function calc( ast::Num, env::Environment )
     return NumVal(ast.n)
-end
-
-function calc(ast::PlusNode, env::Environment)
-	sum = 0
-	for i = 1:length(ast.nums)
-		sum = sum + calc(ast.nums[i]).n
-	end
-	return NumVal(sum)
 end
 
 function calc(ast::Binop, env::Environment)
@@ -329,7 +327,14 @@ function analyze(ast::VarRefNode)
 end
 
 function analyze(ast::PlusNode)
-	return PlusNode(+, map(x->analyze(x), ast.nums))
+	parsed = analyze(ast.nums[length(ast.nums)])
+	node = Binop(+, Num(0), parsed)
+	temp_array = reverse(ast.nums)
+	for j = 2:(length(temp_array))
+		parsed = analyze(temp_array[j])
+		node = Binop(+, node, parsed)
+	end
+	return node
 end
 
 function analyze(ast::Binop)
@@ -365,7 +370,8 @@ function interp( cs::AbstractString )
     lxd = Lexer.lex( cs )
     ast = parse( lxd )
 	ast = analyze(ast)
-	env = EmptyEnv();
+	env = EmptyEnv()
+	#return ast
     return calc( ast, env )
 end
 
