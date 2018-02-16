@@ -174,6 +174,14 @@ function parse( expr::Array{Any} )
 			throw(LispError("Too few Arguments!"))
 		end
 		return PlusNode(+, map(x->parse(x), expr[2:end]))
+	elseif expr[1] == :and
+		parsed = parse(expr[length(expr)])
+		ifNode = If0Node(parsed, Num(0), Num(1))
+		for i = length(expr)-1:1
+			parsed = parse(expr[i])
+			ifNode = If0Node(parsed, 0, ifNode)
+		end
+		return ifNode
 	end
 
 	binaryOps = Symbol[:-, :/, :*, :mod]
@@ -337,7 +345,7 @@ function analyze(ast::If0Node)
 end
 
 function analyze(ast::FuncDefNode)
-	return FuncDefNode(ast.formal_parameter, analyze(ast.fun_body))
+	return FuncDefNode(ast.formal, analyze(ast.fun_body))
 end
 
 function analyze(ast::FuncAppNode)
