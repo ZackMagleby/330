@@ -4,7 +4,7 @@ push!(LOAD_PATH, pwd())
 
 using Error
 using Lexer
-export parse, calc, interp, analyze
+export parse, calc, interp, analyze, NumVal, ClosureVal
 #
 # ===========TYPES================
 #
@@ -170,10 +170,13 @@ function parse( expr::Array{Any} )
 		# end
 		return FuncDefNode( expr[2], parse(expr[3]) )
 	elseif expr[1] == :+
-		return PlusNode(+, parse(parsed[2:end]))
+		if(length(expr) < 3)
+			throw(LispError("Too few Arguments!"))
+		end
+		return PlusNode(+, map(x->parse(x), expr[2:end]))
 	end
 
-	binaryOps = Symbol[:+, :-, :/, :*, :mod]
+	binaryOps = Symbol[:-, :/, :*, :mod]
 	unaryOps = Symbol[:collatz]
 
 	if length(expr) > 4
@@ -229,7 +232,7 @@ end
 function calc(ast::PlusNode, env::Environment)
 	sum = 0
 	for i = 1:length(ast.nums)
-		sum = sum + calc(ast.nums[i])
+		sum = sum + calc(ast.nums[i]).n
 	end
 	return NumVal(sum)
 end
@@ -243,7 +246,7 @@ function calc(ast::Binop, env::Environment)
 		if typeof(leftNum) != NumVal || typeof(rightNum) != NumVal
 			throw(LispError("Incorrect Type!"))
 		end
-    	return NumVal(ast.op(calc(leftNum.n, rightNum.n)))
+    	return NumVal(ast.op(leftNum.n, rightNum.n))
 	end
 end
 
@@ -303,12 +306,57 @@ function calc( ast::FuncAppNode, env::Environment )
 end
 
 #
+# =============ANALYZE=======================
+#
+function analyze(ast::AE)
+	return ast
+end
+
+function analyze(ast::Num)
+	return ast
+end
+
+function analyze(ast::VarRefNode)
+	return ast
+end
+
+function analyze(ast::PlusNode)
+	return PlusNode(+, map(x->analyze(x), ast.nums))
+end
+
+function analyze(ast::Binop)
+	return Binop(ast.op, analyze(ast.lhs), analyze(ast.rhs))
+end
+
+function analyze(ast::Unop)
+	return Unop(ast.op, analyze(ast.lhs))
+end
+
+function analyze(ast::If0Node)
+	return If0Node(analyze(ast.cond), analyze(ast.zerobranch), analyze(ast.nzerobranch))
+end
+
+function analyze(ast::FuncDefNode)
+	return FuncDefNode(ast.formal_parameter, analyze(ast.fun_body))
+end
+
+function analyze(ast::FuncAppNode)
+	FuncAppNode(analyze(ast.fun_expr), map(x->analyze(x), ast.arg_expr))
+end
+
+function analyze(ast::WithNode)
+	formals = map(x->x.sym, ast.nodes)
+	args = map(x->analyze(x.binding_expr) , ast.nodes)
+	return FuncAppNode(FuncDefNode(formals, analyze(ast.body)), args)
+end
+#
 # =============INTERPRETE=======================
 #
 
 function interp( cs::AbstractString )
     lxd = Lexer.lex( cs )
     ast = parse( lxd )
+	ast = analyze(ast)
 	env = EmptyEnv();
     return calc( ast, env )
 end
