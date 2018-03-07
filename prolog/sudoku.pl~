@@ -104,7 +104,6 @@ getCube(Board, Number, AsList) :-
 % ---- PUT CODE HERE ---
 
 solve(Board) :-
-        nums = [0,1,2,3,4,5,6,7,8],
         all_different([Board|0]),
         all_different([Board|1]),
         all_different([Board|2]),
@@ -149,19 +148,14 @@ solve(Board) :-
         getCube(Board, 7, Cube7),
         all_different(Cube7),
         getCube(Board, 8, Cube8),
-        all_different(Cube8),
-        findall(helper(Board,X,Y), (member(X,nums),member(Y,nums)), nums)
+        all_different(Cube8)
         .  % ---PUT CODE HERE---
 
 all_different([H | T]) :- member(H, T), !, fail.
 all_different([_ | T]) :- all_different(T).
 all_different([_]).
 
-helper(Board, I, J) :-
-        RowI = [Board|I],
-        columnAsList(Board, J, ColJ),
-        cubeNum(I, J, CubK),
-        (nonvar(SIJ); var(SIJ), digit(SIJ), is_set(RowI), is_set(ColJ), is_set(CubK)).
+
 % ---- PUT CODE HERE ---
 % ---- PUT CODE HERE ---
 
