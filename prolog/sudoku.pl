@@ -104,64 +104,46 @@ getCube(Board, Number, AsList) :-
 % ---- PUT CODE HERE ---
 
 solve(Board) :-
-        nums = [0,1,2,3,4,5,6,7,8],
-        all_different([Board|0]),
-        all_different([Board|1]),
-        all_different([Board|2]),
-        all_different([Board|3]),
-        all_different([Board|4]),
-        all_different([Board|5]),
-        all_different([Board|6]),
-        all_different([Board|7]),
-        all_different([Board|8]),
+        Nums = [0,1,2,3,4,5,6,7,8],
         columnAsList(Board, 0, Col0),
-        all_different(Col0),
         columnAsList(Board, 1, Col1),
-        all_different(Col1),
         columnAsList(Board, 2, Col2),
-        all_different(Col2),
         columnAsList(Board, 3, Col3),
-        all_different(Col3),
         columnAsList(Board, 4, Col4),
-        all_different(Col4),
         columnAsList(Board, 5, Col5),
-        all_different(Col5),
         columnAsList(Board, 6, Col6),
-        all_different(Col6),
         columnAsList(Board, 7, Col7),
-        all_different(Col7),
         columnAsList(Board, 8, Col8),
-        all_different(Col8),
+        ColList = [Col0, Col1, Col2, Col3, Col4, Col5, Col6, Col7, Col8],
         getCube(Board, 0, Cube0),
-        all_different(Cube0),
         getCube(Board, 1, Cube1),
-        all_different(Cube1),
         getCube(Board, 2, Cube2),
-        all_different(Cube2),
         getCube(Board, 3, Cube3),
-        all_different(Cube3),
         getCube(Board, 4, Cube4),
-        all_different(Cube4),
         getCube(Board, 5, Cube5),
-        all_different(Cube5),
         getCube(Board, 6, Cube6),
-        all_different(Cube6),
         getCube(Board, 7, Cube7),
-        all_different(Cube7),
         getCube(Board, 8, Cube8),
-        all_different(Cube8),
-        findall(helper(Board,X,Y), (member(X,nums),member(Y,nums)), nums)
-        .  % ---PUT CODE HERE---
+        CubeList = [Cube0, Cube1, Cube2, Cube3, Cube4, Cube5, Cube6, Cube7, Cube8],
+        row_loop(Board, ColList, CubeList, Nums, Nums)
+        .
+% ---PUT CODE HERE---
 
-all_different([H | T]) :- member(H, T), !, fail.
-all_different([_ | T]) :- all_different(T).
-all_different([_]).
+row_loop(_, _, _, [], _).
+row_loop(R, C, Cube, [I|IT], J) :-
+        col_loop(R, C, Cube, I, J),
+        row_loop(R, C, Cube, IT, J).
 
-helper(Board, I, J) :-
-        RowI = [Board|I],
-        columnAsList(Board, J, ColJ),
-        cubeNum(I, J, CubK),
-        (nonvar(SIJ); var(SIJ), digit(SIJ), is_set(RowI), is_set(ColJ), is_set(CubK)).
+col_loop(_, _, _, _, []).
+col_loop(R, C, Cube, I, [J|JT]) :-
+        nth0(I, R, RowI),
+        nth0(J, C, ColJ),
+        cubeNum(I, J, K),
+        nth0(K, Cube, CubK),
+        nth0(J, RowI, SIJ),
+        (nonvar(SIJ); var(SIJ), digit(SIJ), is_set(RowI), is_set(ColJ), is_set(CubK)),
+        col_loop(R, C, Cube, I, JT).
+
 % ---- PUT CODE HERE ---
 % ---- PUT CODE HERE ---
 
