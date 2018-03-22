@@ -42,7 +42,7 @@ defmodule NameServer do
  
   def handle_call({:resolve, name}, {pid, _from}, localMap) do
  	#{:resolve, name} #This will return to the caller the pid associated with name, or :error if no such pid can be found
-	#Asynchronous
+	#Synchronous
 	#Change the parameter names appropriately
     #Your code here
  
